@@ -4,12 +4,16 @@ import { couponValidator } from './coupon.validator';
 import CouponService from './coupon.service';
 import logger from '../config/logger';
 import { asyncWrapper } from '../utils';
+import authenticate from '../common/middleware/authenticate';
+import { canAccess } from '../common/middleware/canAccess';
+import { Roles } from '../constant';
 
 const router = express.Router()
 const couponService = new CouponService()
 
 const couponController = new CouponController(couponService, logger);
 
-router.post('/',couponValidator,asyncWrapper(couponController.createCoupon));
+router.post('/',authenticate,canAccess([Roles.ADMIN,Roles.MANAGER]),couponValidator,asyncWrapper(couponController.createCoupon));
+router.get('/',asyncWrapper(couponController.getAll));
 
 export default router;

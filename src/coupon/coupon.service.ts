@@ -5,4 +5,7 @@ export default class CouponService {
         // create coupon logic
         return await CouponModel.create(couponData);
     }
+    getAll = async () => {
+        return await CouponModel.find({});
+    }
 }

@@ -30,4 +30,9 @@ export default class CouponController {
         res.status(201).json(coupon);
 
     }
+
+    getAll = async (req:Request, res:Response) => {
+        const coupons = await this.couponService.getAll();
+        res.json(coupons)
+    }
 }
