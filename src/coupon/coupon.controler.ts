@@ -64,4 +64,27 @@ export default class CouponController {
         this.logger.info(`Coupon updated: ${id}`);
         res.json(coupon);
     }
+
+    verifyCoupon = async (req:Request, res:Response, next: NextFunction) => {
+        const result = validationResult(req)
+        if (!result.isEmpty()) {
+            return next(createHttpError(400, result.array()[0].msg))
+        }
+        const { code, tenantId } = req.body;
+        const coupon = await this.couponService.verifyCoupon(code, tenantId);
+        if(!coupon) {
+            return next(createHttpError(400, 'Coupon does not exisit!'));
+        }
+
+        //validate expiry
+        const currentDate = new Date();
+        const couponDate = new Date(coupon.validUpto);
+
+        if(currentDate <= couponDate) {
+            // return next(createHttpError(400, 'Coupon is expired!'));
+            return res.json({valid: true, discount: coupon.discount});
+        }
+
+        res.json({valid: false, discount: 0});
+    }
 }

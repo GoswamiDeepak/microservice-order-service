@@ -15,4 +15,7 @@ export default class CouponService {
     updateCoupon = async (id: string, couponData: ICoupon) => {
         return await CouponModel.findByIdAndUpdate(id, { $set: couponData }, { new: true });
     }
+    verifyCoupon = async (code: string, tenantId: number) => {
+        return await CouponModel.findOne({ code, tenantId });
+    }
 }

@@ -7,6 +7,7 @@ import { asyncWrapper } from '../utils';
 import authenticate from '../common/middleware/authenticate';
 import { canAccess } from '../common/middleware/canAccess';
 import { Roles } from '../constant';
+import { couponVerifyValidator } from './couponVerify.validator';
 
 const router = express.Router()
 const couponService = new CouponService()
@@ -17,5 +18,5 @@ router.post('/',authenticate,canAccess([Roles.ADMIN,Roles.MANAGER]),couponValida
 router.get('/',asyncWrapper(couponController.getAll));
 router.delete('/:id',authenticate,canAccess([Roles.ADMIN,Roles.MANAGER]),asyncWrapper(couponController.deleteCoupon));
 router.put('/:id',authenticate,canAccess([Roles.ADMIN,Roles.MANAGER]),couponValidator,asyncWrapper(couponController.updateCoupon));
-
+router.post('/verify',authenticate, couponVerifyValidator,asyncWrapper(couponController.verifyCoupon));
 export default router;
