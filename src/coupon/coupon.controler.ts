@@ -33,6 +33,35 @@ export default class CouponController {
 
     getAll = async (req:Request, res:Response) => {
         const coupons = await this.couponService.getAll();
+        this.logger.info('Coupons fetched');
         res.json(coupons)
+    }
+
+    deleteCoupon = async (req:Request, res:Response) => {
+        const { id } = req.params;
+        await this.couponService.deleteCoupon(id);
+        this.logger.info(`Coupon deleted: ${id}`);
+        res.json({ message: 'Coupon deleted successfully' });
+    }
+
+    updateCoupon = async (req:Request, res:Response, next: NextFunction) => {
+        const result = validationResult(req)
+        if (!result.isEmpty()) {
+            return next(createHttpError(400, result.array()[0].msg))
+        }
+        const { id } = req.params;
+        const { title, code, discount, validUpto, tenantId } = req.body;
+
+        const couponData = {
+            title,
+            code,
+            discount,
+            validUpto,
+            tenantId
+        }
+
+        const coupon = await this.couponService.updateCoupon(id, couponData as ICoupon);
+        this.logger.info(`Coupon updated: ${id}`);
+        res.json(coupon);
     }
 }
