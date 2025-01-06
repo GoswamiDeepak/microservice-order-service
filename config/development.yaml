@@ -7,4 +7,6 @@ database:
   url: mongodb://localhost:27017/order-serivce
 frontend:
   url: http://localhost:3000
+kafka:
+  broker: localhost:9092
 
