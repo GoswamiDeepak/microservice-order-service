@@ -5,3 +5,6 @@ auth:
   jwksUri: http://localhost:5501/.well-known/jwks.json
 database:
   url: mongodb://localhost:27017/order-serivce
+frontend:
+  url: http://localhost:3000
+

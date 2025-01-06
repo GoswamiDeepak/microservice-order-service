@@ -3,8 +3,17 @@ import { globalErrorHandler } from "./common/middleware/globalErrorHandler";
 import cookieParser from "cookie-parser";
 import customerRouter from './customer/customerRouter'
 import couponRouter from './coupon/coupon.router'
+import cors from 'cors';
+import config from 'config';
 
 const app = express();
+
+app.use(
+  cors({
+      origin: [config.get('frontend.url')],
+      credentials: true,
+  }),
+);
 
 app.use(cookieParser());
 app.use(express.json());

@@ -10,13 +10,15 @@ import { Roles } from '../constant';
 import { couponVerifyValidator } from './couponVerify.validator';
 
 const router = express.Router()
-const couponService = new CouponService()
 
+const couponService = new CouponService()
 const couponController = new CouponController(couponService, logger);
 
 router.post('/',authenticate,canAccess([Roles.ADMIN,Roles.MANAGER]),couponValidator,asyncWrapper(couponController.createCoupon));
-router.get('/',asyncWrapper(couponController.getAll));
+router.get('/',authenticate, asyncWrapper(couponController.getAll));
 router.delete('/:id',authenticate,canAccess([Roles.ADMIN,Roles.MANAGER]),asyncWrapper(couponController.deleteCoupon));
 router.put('/:id',authenticate,canAccess([Roles.ADMIN,Roles.MANAGER]),couponValidator,asyncWrapper(couponController.updateCoupon));
 router.post('/verify',authenticate, couponVerifyValidator,asyncWrapper(couponController.verifyCoupon));
+
+
 export default router;
