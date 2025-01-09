@@ -6,7 +6,7 @@ import { KafkaBroker } from "../../config/kafka";
 let broker: MessageBroker | null = null;
 
 // Factory function to create or return the singleton instance
-export const createMessageBroker = (): MessageBroker => {
+export const createMessageBroker = (): MessageBroker => { 
     // Check if the instance already exists
     if (!broker) {
         // Create a new instance if it doesn't exist

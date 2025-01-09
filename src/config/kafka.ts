@@ -1,9 +1,11 @@
 import { Consumer, EachMessagePayload, Kafka } from "kafkajs";
 import { MessageBroker } from "../types/broker";
 import { handleProductUpdate } from "../productCache/productUpdateHandler";
+import { handleToppingUpdate } from "../toppingCache/toppingUpdateHandler";
 
 export class KafkaBroker implements MessageBroker {
     private consumer: Consumer;
+
     constructor(clientId: string, brokers: string[]) {
         const kafka = new Kafka({clientId, brokers}) 
         this.consumer = kafka.consumer({ groupId: clientId})
@@ -29,6 +31,9 @@ export class KafkaBroker implements MessageBroker {
                 switch (topic) {
                     case 'product-topic':
                         await handleProductUpdate(message.value.toString());
+                        return;
+                    case 'topping-topic':
+                        await handleToppingUpdate(message.value.toString());
                         return;
                     default:
                         console.log('Doing nothing.....')

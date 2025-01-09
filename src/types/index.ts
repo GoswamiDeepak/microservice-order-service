@@ -29,3 +29,8 @@ export interface ProductMessage {
   id: string;
   priceConfiguration: ProductPricingCache;
 }
+
+export interface ToppingMessage {
+  id: string;
+  price: number;
+}
