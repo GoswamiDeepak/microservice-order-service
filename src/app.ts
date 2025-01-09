@@ -1,10 +1,12 @@
 import express, { Request, Response } from "express";
+import cors from 'cors';
+import config from 'config';
 import { globalErrorHandler } from "./common/middleware/globalErrorHandler";
 import cookieParser from "cookie-parser";
 import customerRouter from './customer/customerRouter'
 import couponRouter from './coupon/coupon.router'
-import cors from 'cors';
-import config from 'config';
+import orderRouter from './order/order.router'
+
 
 const app = express();
 
@@ -25,6 +27,7 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use('/customer',customerRouter)
 app.use('/coupon', couponRouter)
+app.use('/order', orderRouter)
 
 //global middleware
 app.use(globalErrorHandler);
