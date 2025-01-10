@@ -1,5 +1,5 @@
 server:
-  port: 5503
+  port: 5504
   host: localhost
 auth:
   jwksUri: http://localhost:5501/.well-known/jwks.json

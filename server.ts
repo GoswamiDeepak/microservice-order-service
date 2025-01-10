@@ -22,7 +22,7 @@ const startServer = async () => {
   } catch (err) {
     logger.error("Error happened: ", err.message);
     if (broker) {
-      await broker.disconnectConsumer();
+      // await broker.disconnectConsumer();
     }
     process.exit(1);
   }

@@ -34,3 +34,37 @@ export interface ToppingMessage {
   id: string;
   price: number;
 }
+
+export interface ProductPriceConfiguration {
+  [key: string] : {
+    priceType: "base" | "aditional",
+    availableOptions: {
+      [key:string] : number; 
+    }
+  }
+}
+export interface Product {
+  _id: string;
+  name: string;
+  image: string;
+  description: string;
+  priceConfiguration: ProductPriceConfiguration;
+}
+
+export interface Topping {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+}
+
+export interface CartItem extends Pick<Product, "_id" | "name" | "priceConfiguration" | "image"> {
+  chosenConfiguration: {
+    priceConfiguration: {
+      [key: string]: string;
+    };
+    selectedToppings: Topping[];
+  };
+  qty: number;
+
+}
