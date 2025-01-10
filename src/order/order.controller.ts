@@ -6,21 +6,29 @@ import topppingCacheModel, {
   ToppingPriceCache,
 } from "../toppingCache/topppingCacheModel"; // Model for interacting with the topping pricing cache
 import { CouponModel } from "../coupon/coupon.model";
+import { OrderStatus, PaymentStatus } from "./order.type";
+import orderModel from "./order.model";
 
 // Define the OrderController class
 export class OrderController {
   // Method to create an order
   createOrder = async (req: Request, res: Response) => {
+    const {
+      cart,
+      couponCode,
+      tenantId,
+      customerId,
+      comment,
+      address,
+      paymentMode,
+    } = req.body;
+
     // TODO: Validate request data to ensure it contains valid cart information
     // Calculate the total price of the items in the cart using the `calculateTotal` method
-    const totalPrice = await this.calculateTotal(req.body.cart);
-
+    const totalPrice = await this.calculateTotal(cart);
+    
     // Initialize discount percentage to 0
     let discountPercentage = 0;
-
-    // Extract the coupon code and tenant ID from the request body
-    const couponCode = req.body.couponCode;
-    const tenantId = req.body.tenantId;
 
     // If a coupon code is provided, calculate the discount percentage
     if (couponCode) {
@@ -33,7 +41,7 @@ export class OrderController {
 
     // Calculate the discount amount based on the total price and discount percentage
     const discountAmount = Math.round((totalPrice * discountPercentage) / 100);
-    
+
     // Calcuate the total price after applying the discount
     const priceAfterDiscount = totalPrice - discountAmount;
 
@@ -41,23 +49,48 @@ export class OrderController {
     const TAXES_PERCENTAGE = 18;
 
     // Calculate the taxes amount based on the total price and taxes percentage
-    const taxesAmount = Math.round((priceAfterDiscount * TAXES_PERCENTAGE) / 100);
+    const taxesAmount = Math.round(
+      (priceAfterDiscount * TAXES_PERCENTAGE) / 100,
+    );
 
     //TODO: Store in db for each tenant
-    const DELIVERY_CHARGES= 100
+    const DELIVERY_CHARGES = 100;
 
     // Calculate the total price after applying the discount and taxes and delivery charges
     const finalTotal = priceAfterDiscount + taxesAmount + DELIVERY_CHARGES;
 
+    //TODO: Problams...
+    // Create a new order object with the calculated total price, discount amount, and final total
+    const order = {
+      cart,
+      address,
+      comment,
+      customerId,
+      deliveryChagres: DELIVERY_CHARGES,
+      discount: discountAmount,
+      taxes: taxesAmount,
+      tenantId,
+      total: finalTotal,
+      paymentMode,
+      orderStatus: OrderStatus.RECEIVED,
+      paymentStatus: PaymentStatus.PENDING,
+    };
+
+    // Create an order
+    const newOrder = await orderModel.create(order);
+
     // Send a JSON response with a success message, the total price, and the discount amount
-    res.json({ message: "order created", totalPrice, discountAmount, finalTotal });
+    res.json({
+      message: "order created",
+      newOrder
+    });
   };
 
   // Private method to calculate the total price of items in the cart
   private calculateTotal = async (cart: CartItem[]) => {
     // Extract product IDs from the cart items
     const productIds = cart.map((item) => item._id);
-
+    
     // Fetch product pricing information from the cache for the extracted product IDs
     const productPricings = await productCacheModel.find({
       productId: { $in: productIds },

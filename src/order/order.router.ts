@@ -5,6 +5,8 @@ import { OrderController } from './order.controller';
 const router = express.Router();
 
 const orderController = new OrderController();
-router.post('/', authenticate, asyncWrapper(orderController.createOrder));
+router.post('/', 
+    // authenticate, 
+    asyncWrapper(orderController.createOrder));
 
 export default router;
