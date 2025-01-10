@@ -10,4 +10,6 @@ frontend:
   url: http://localhost:3000
 kafka:
   broker: localhost:9092
+stripe:
+  secretKey: sk_test_51QfosQSI11ZaOTQ55ajbUAxh8a986bsmxJ4ncQHBlht4tx9uQuTRBlu4u4JUv7y3o9nFz9jGlM7SrrxG2AlCL0W200gDEhJNdE
 

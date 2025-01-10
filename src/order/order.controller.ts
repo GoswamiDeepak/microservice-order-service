@@ -11,9 +11,11 @@ import orderModel from "./order.model";
 import idempotencyModel from "../idempotency/idempotency.model";
 import mongoose from "mongoose";
 import createHttpError from "http-errors";
+import { PaymentGW } from "../payment/paymentTypes";
 
 // Define the OrderController class
 export class OrderController {
+    constructor(private paymentGateway: PaymentGW) {}
   // Method to create an order
   createOrder = async (req: Request, res: Response, next: NextFunction) => {
     // Destructure the required data from the request body
@@ -117,11 +119,21 @@ export class OrderController {
     }
 
     // TODO: Payment processing logic can be added here
+    // TODO: error handling
+    // TODO: add logging
+    const session = await this.paymentGateway.createSession({
+      currency: "inr",
+      amount: finalTotal,
+      orderId: newOrder[0]._id.toString(),
+      tenantId: tenantId,
+      idempotencyKey: idempotencyKey as string,
+    });
+
+    // TODO: update order document -> paymentId
 
     // Send a JSON response with a success message, the total price, and the discount amount
     res.json({
-      message: "order created",
-    newOrder
+      paymentUrl: session.paymentUrl,
     });
   };
 
