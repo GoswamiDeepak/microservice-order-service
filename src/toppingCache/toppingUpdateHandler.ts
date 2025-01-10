@@ -12,7 +12,7 @@ export async function handleToppingUpdate(message: string) {
          },
          {
              $set: {
-                 toppingPrice: topping.price,
+                 price: topping.price,
              },
          },
          {

@@ -52,7 +52,7 @@ export interface Product {
 }
 
 export interface Topping {
-  id: string;
+  _id: string;
   name: string;
   price: number;
   image: string;

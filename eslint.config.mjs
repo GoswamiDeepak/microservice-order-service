@@ -9,6 +9,7 @@ export default [
     },
     rules: {
       // 'no-unused-vars': 'error',
+      "no-console": "error",
     },
   },
   pluginJs.configs.recommended,

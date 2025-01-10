@@ -27,6 +27,11 @@ export class KafkaBroker implements MessageBroker {
         await this.consumer.subscribe({topics, fromBeginning})
         await this.consumer.run ({
             eachMessage: async ({topic, partition, message}: EachMessagePayload) => {
+                console.log({
+                    value: message.value.toString(),
+                    topic,
+                    partition,
+                })
                 //logic to handle incoming message
                 switch (topic) {
                     case 'product-topic':
@@ -38,11 +43,7 @@ export class KafkaBroker implements MessageBroker {
                     default:
                         console.log('Doing nothing.....')
                 }
-                console.log({
-                    value: message.value.toString(),
-                    topic,
-                    partition,
-                })
+               
             }
         })
         

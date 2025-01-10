@@ -73,7 +73,7 @@ const orderSchema = new mongoose.Schema<IOrder>({
         type: Number,
         required: true,
     },
-    texes: {
+    taxes: {
         type: Number,
         required: true
     },

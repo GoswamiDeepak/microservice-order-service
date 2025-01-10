@@ -1,10 +1,11 @@
 server:
-  port: 5504
+  port: 5503
   host: localhost
 auth:
   jwksUri: http://localhost:5501/.well-known/jwks.json
 database:
-  url: mongodb://localhost:27017/order-serivce
+  # url: mongodb://localhost:27017/order-serivce
+  url: mongodb+srv://deepakgoswamiofficial:966sjTtYUs5tOSjN@cluster0.xw9sw.mongodb.net/order-service?retryWrites=true&w=majority&appName=Cluster0
 frontend:
   url: http://localhost:3000
 kafka:

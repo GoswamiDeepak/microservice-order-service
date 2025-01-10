@@ -25,7 +25,7 @@ export interface IOrder {
     customerId: mongoose.Types.ObjectId;
     total: number;     
     discount: number;
-    texes: number;
+    taxes: number;
     deliveryCharges: number;
     address: string;
     tenantId: string;
