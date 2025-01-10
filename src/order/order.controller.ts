@@ -10,7 +10,7 @@ import { CouponModel } from "../coupon/coupon.model";
 // Define the OrderController class
 export class OrderController {
   // Method to create an order
-createOrder = async (req: Request, res: Response) => {
+  createOrder = async (req: Request, res: Response) => {
     // TODO: Validate request data to ensure it contains valid cart information
     // Calculate the total price of the items in the cart using the `calculateTotal` method
     const totalPrice = await this.calculateTotal(req.body.cart);
@@ -24,16 +24,34 @@ createOrder = async (req: Request, res: Response) => {
 
     // If a coupon code is provided, calculate the discount percentage
     if (couponCode) {
-        // Fetch the discount percentage using the `getDiscountPercentage` method
-        discountPercentage = await this.getDiscountPercentage(couponCode, tenantId);
+      // Fetch the discount percentage using the `getDiscountPercentage` method
+      discountPercentage = await this.getDiscountPercentage(
+        couponCode,
+        tenantId,
+      );
     }
 
     // Calculate the discount amount based on the total price and discount percentage
     const discountAmount = Math.round((totalPrice * discountPercentage) / 100);
+    
+    // Calcuate the total price after applying the discount
+    const priceAfterDiscount = totalPrice - discountAmount;
+
+    //TODO: Store in db for each tenant
+    const TAXES_PERCENTAGE = 18;
+
+    // Calculate the taxes amount based on the total price and taxes percentage
+    const taxesAmount = Math.round((priceAfterDiscount * TAXES_PERCENTAGE) / 100);
+
+    //TODO: Store in db for each tenant
+    const DELIVERY_CHARGES= 100
+
+    // Calculate the total price after applying the discount and taxes and delivery charges
+    const finalTotal = priceAfterDiscount + taxesAmount + DELIVERY_CHARGES;
 
     // Send a JSON response with a success message, the total price, and the discount amount
-    res.json({ message: "order created", totalPrice, discountAmount });
-};
+    res.json({ message: "order created", totalPrice, discountAmount, finalTotal });
+  };
 
   // Private method to calculate the total price of items in the cart
   private calculateTotal = async (cart: CartItem[]) => {
