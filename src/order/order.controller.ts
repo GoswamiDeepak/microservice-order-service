@@ -6,7 +6,7 @@ import topppingCacheModel, {
   ToppingPriceCache,
 } from "../toppingCache/topppingCacheModel"; // Model for interacting with the topping pricing cache
 import { CouponModel } from "../coupon/coupon.model";
-import { OrderStatus, PaymentStatus } from "./order.type";
+import { OrderStatus, PaymentMode, PaymentStatus } from "./order.type";
 import orderModel from "./order.model";
 import idempotencyModel from "../idempotency/idempotency.model";
 import mongoose from "mongoose";
@@ -15,7 +15,7 @@ import { PaymentGW } from "../payment/paymentTypes";
 
 // Define the OrderController class
 export class OrderController {
-    constructor(private paymentGateway: PaymentGW) {}
+  constructor(private paymentGateway: PaymentGW) {}
   // Method to create an order
   createOrder = async (req: Request, res: Response, next: NextFunction) => {
     // Destructure the required data from the request body
@@ -118,23 +118,29 @@ export class OrderController {
       }
     }
 
-    // TODO: Payment processing logic can be added here
+    // DONE: Payment processing logic can be added here
     // TODO: error handling
     // TODO: add logging
-    const session = await this.paymentGateway.createSession({
-      currency: "inr",
-      amount: finalTotal,
-      orderId: newOrder[0]._id.toString(),
-      tenantId: tenantId,
-      idempotencyKey: idempotencyKey as string,
-    });
+    if (paymentMode === PaymentMode.CARD) {
+      const session = await this.paymentGateway.createSession({
+        currency: "inr",
+        amount: finalTotal,
+        orderId: newOrder[0]._id.toString(),
+        tenantId: tenantId,
+        idempotencyKey: idempotencyKey as string,
+      });
 
-    // TODO: update order document -> paymentId
+      // TODO: update order document -> paymentId
 
-    // Send a JSON response with a success message, the total price, and the discount amount
+      // Send a JSON response with a success message, the total price, and the discount amount
+      res.json({
+        paymentUrl: session.paymentUrl,
+      });
+    }
+
     res.json({
-      paymentUrl: session.paymentUrl,
-    });
+        paymentUrl: null
+      });
   };
 
   // Private method to calculate the total price of items in the cart
