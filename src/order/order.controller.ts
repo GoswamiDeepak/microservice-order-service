@@ -10,11 +10,15 @@ import idempotencyModel from "../idempotency/idempotency.model";
 import mongoose from "mongoose";
 import createHttpError from "http-errors";
 import { PaymentGW } from "../payment/paymentTypes";
+import { MessageBroker } from "../types/broker";
 
 // Define the OrderController class
 export class OrderController {
-      constructor(private paymentGateway: PaymentGW) {}
-      
+      constructor(
+            private paymentGateway: PaymentGW,
+            private broker: MessageBroker,
+      ) {}
+
       // Method to create an order
       createOrder = async (req: Request, res: Response, next: NextFunction) => {
             // Destructure the required data from the request body
@@ -127,11 +131,15 @@ export class OrderController {
 
                   // TODO: update order document -> paymentId
 
+                  await this.broker.sendMessage("order-topic", JSON.stringify(newOrder));
                   // Send a JSON response with a success message, the total price, and the discount amount
                   res.json({
                         paymentUrl: session.paymentUrl,
                   });
             }
+
+            await this.broker.sendMessage("order-topic", JSON.stringify(newOrder));
+
 
             res.json({
                   paymentUrl: null,

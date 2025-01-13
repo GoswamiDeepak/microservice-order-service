@@ -13,7 +13,7 @@ export interface PayementSession {
     paymentStatus: GatewayPaymentStatus
 }
 
-interface CustomMetadata {
+export interface CustomMetadata {
     orderId: string;
 }
 export interface VerifiedSession {

@@ -2,12 +2,16 @@ import express from "express";
 import authenticate from "../common/middleware/authenticate";
 import { asyncWrapper } from "../utils";
 import { OrderController } from "./order.controller";
-import { StripeGW } from "../payment/stripe";
+import { createMessageBroker } from "../common/factories/brokerFactory";
+import { stripeFactory } from "../common/factories/stripeFactory";
+
 const router = express.Router();
 
-const paymentGW = new StripeGW();
-const orderController = new OrderController(paymentGW);
+const paymentGW = stripeFactory(); 
+const broker = createMessageBroker();
 
-router.post("/", authenticate, asyncWrapper(orderController.createOrder));
+const orderController = new OrderController(paymentGW, broker);
+
+router.post("/", authenticate, asyncWrapper(orderController.createOrder)); 
 
 export default router;
