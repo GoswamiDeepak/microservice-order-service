@@ -132,6 +132,7 @@ export class OrderController {
                   // TODO: update order document -> paymentId
 
                   await this.broker.sendMessage("order-topic", JSON.stringify(newOrder));
+                  
                   // Send a JSON response with a success message, the total price, and the discount amount
                   res.json({
                         paymentUrl: session.paymentUrl,

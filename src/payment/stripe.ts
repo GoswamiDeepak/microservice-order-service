@@ -44,8 +44,8 @@ export class StripeGW implements PaymentGW {
         },
       ],
       mode: "payment",
-      success_url: `${config.get("frontend.url")}/payment?sccess=true&orderId=${option.orderId}&tenantId=${option.tenantId}`,
-      cancel_url: `${config.get("frontend.url")}/payment?sccess=false&orderId=${option.orderId}&tenantId=${option.tenantId}`,
+      success_url: `${config.get("frontend.url")}/payment?sccess=true&orderId=${option.orderId}&tenantId=${option.tenantId}&restaurentId=${option.tenantId}`,
+      cancel_url: `${config.get("frontend.url")}/payment?sccess=false&orderId=${option.orderId}&tenantId=${option.tenantId}&restaurentId=${option.tenantId}`,
     }, {idempotencyKey: option.idempotencyKey});
     return {
         id: session.id,
