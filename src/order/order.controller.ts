@@ -175,8 +175,8 @@ export class OrderController {
             // }
             acc[field] = 1;
             return acc;
-        }, {})
-        const order = await orderModel.findOne({_id: orderId},projection)
+        }, {customerId: 1})
+        const order = await orderModel.findOne({_id: orderId},projection).populate('customerId',"firstname lastname");  
         if(!order) {
             return next(createHttpError(400, "No order found."))
         }
@@ -193,7 +193,7 @@ export class OrderController {
             if(!customer) {
                 return next(createHttpError(400, "No customer found."))
             }
-            if(order.customerId.toString() === customer._id.toString()) {
+            if(order.customerId._id.toString() === customer._id.toString()) {
                 return res.json(order)
             }
         }
