@@ -14,6 +14,7 @@ export class StripeGW implements PaymentGW {
         // customer_email: option.email, // TODO: add email
         metadata: {
         orderId: option.orderId,
+        restaurantId: option.tenantId
       },
       billing_address_collection: "required",
       // TODO: in future capture structured address form customer
@@ -44,8 +45,8 @@ export class StripeGW implements PaymentGW {
         },
       ],
       mode: "payment",
-      success_url: `${config.get("frontend.url")}/payment?sccess=true&orderId=${option.orderId}&tenantId=${option.tenantId}&restaurentId=${option.tenantId}`,
-      cancel_url: `${config.get("frontend.url")}/payment?sccess=false&orderId=${option.orderId}&tenantId=${option.tenantId}&restaurentId=${option.tenantId}`,
+      success_url: `${config.get("frontend.url")}/payment?success=true&orderId=${option.orderId}&restaurentId=${option.tenantId}`,
+      cancel_url: `${config.get("frontend.url")}/payment?success=false&orderId=${option.orderId}&restaurentId=${option.tenantId}`,
     }, {idempotencyKey: option.idempotencyKey});
     return {
         id: session.id,
