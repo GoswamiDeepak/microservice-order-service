@@ -14,5 +14,6 @@ const orderController = new OrderController(paymentGW, broker);
 
 router.post("/", authenticate, asyncWrapper(orderController.createOrder)); 
 router.get("/mine", authenticate, asyncWrapper(orderController.getMine)); 
+router.get("/:orderId", authenticate, asyncWrapper(orderController.getSingle)); 
 
 export default router;

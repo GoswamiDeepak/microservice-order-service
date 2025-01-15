@@ -164,6 +164,41 @@ export class OrderController {
       return res.json(orders)
 
     }
+    getSingle =  async(req: JWTAuth, res: Response, next: NextFunction) => {
+        const orderId = req.params.orderId;
+        const {sub:userId, role, tenant: tenantId} = req.auth;
+        const fields = req.query.fields ? req.query.fields.toString().split(',') : []; //['orderStatus', 'paymentStatus']
+        const projection = fields.reduce((acc, field) => {
+            // return {
+            //     ...acc,
+            //     [field]: 1,
+            // }
+            acc[field] = 1;
+            return acc;
+        }, {})
+        const order = await orderModel.findOne({_id: orderId},projection)
+        if(!order) {
+            return next(createHttpError(400, "No order found."))
+        }
+        if(role === 'admin') {
+            return res.json(order)
+        }
+
+        const myRestaurentOrder = order.tenantId === tenantId;
+        if(role === 'manager' && myRestaurentOrder) {
+            return res.json(order)
+        }
+        if(role === 'customer') {
+            const customer = await customerModel.findOne({userId})
+            if(!customer) {
+                return next(createHttpError(400, "No customer found."))
+            }
+            if(order.customerId.toString() === customer._id.toString()) {
+                return res.json(order)
+            }
+        }
+        return next(createHttpError(403, "Operation not permitted."))
+    }
 
     // Private method to calculate the total price of items in the cart
     private calculateTotal = async (cart: CartItem[]) => {
