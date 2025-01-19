@@ -66,5 +66,6 @@ export interface CartItem extends Pick<Product, "_id" | "name" | "priceConfigura
     selectedToppings: Topping[];
   };
   qty: number;
-
 }
+
+

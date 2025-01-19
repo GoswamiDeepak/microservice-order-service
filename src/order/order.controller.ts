@@ -13,6 +13,7 @@ import { PaymentGW } from "../payment/paymentTypes";
 import { MessageBroker } from "../types/broker";
 import {Request as JWTAuth} from 'express-jwt';
 import customerModel from "../customer/customerModel";
+import { ROLES } from "../constant";
 // Define the OrderController class
 export class OrderController {
     constructor(
@@ -180,15 +181,15 @@ export class OrderController {
         if(!order) {
             return next(createHttpError(400, "No order found."))
         }
-        if(role === 'admin') {
+        if(role === ROLES.ADMIN) {
             return res.json(order)
         }
 
         const myRestaurentOrder = order.tenantId === tenantId;
-        if(role === 'manager' && myRestaurentOrder) {
+        if(role === ROLES.MANAGER && myRestaurentOrder) {
             return res.json(order)
         }
-        if(role === 'customer') {
+        if(role === ROLES.CUSTOMER) {
             const customer = await customerModel.findOne({userId})
             if(!customer) {
                 return next(createHttpError(400, "No customer found."))
@@ -196,6 +197,69 @@ export class OrderController {
             if(order.customerId._id.toString() === customer._id.toString()) {
                 return res.json(order)
             }
+        }
+        return next(createHttpError(403, "Operation not permitted."))
+    }
+
+    getAll = async (req: JWTAuth, res: Response, next: NextFunction)=> {
+        const {role, tenant:restaurentID} = req.auth;
+
+        const tenantId = req.query.tenantId;
+
+        if(role === ROLES.CUSTOMER) {
+            return createHttpError(403, "YOu are not allowed.")
+        }
+
+        if(role === ROLES.ADMIN) {
+            const filter = {}
+
+            if(tenantId) {
+                filter['tenantId'] = tenantId;
+            }
+            //TODO: pagniation
+            //TODO: ADD Logger
+            const orders = await orderModel.find(filter,{},{sort: {createAt: -1}}).populate('customerId');
+            return res.json(orders)
+        }
+
+        if(role === ROLES.MANAGER) {
+            //TODO: Add pagination
+            const orders = await orderModel.find({tenantId: restaurentID},{},{sort: {createAt: -1}}).populate('customerId');
+            return res.json(orders)
+        }
+
+        return next(createHttpError(403, "not permitted."))
+        
+    }
+
+    changeOrderStatus = async (req: JWTAuth, res: Response, next: NextFunction) => {
+        const orderId = req.params.orderId;
+        const {role, tenant:restaurentID} = req.auth;
+
+        if(role === ROLES.ADMIN || role === ROLES.MANAGER) {
+            const order = await orderModel.findOne({_id: orderId});
+            if(!order) {
+                return next(createHttpError(400, "No order found."))
+            }
+            if(role === ROLES.ADMIN) {
+                order.orderStatus = req.body.orderStatus;
+                await order.save();
+                return res.json(order)
+            }
+
+            const isMyRestaurentOrder = order.tenantId === restaurentID;
+
+            if(role === ROLES.ADMIN && !isMyRestaurentOrder) {
+                return next(createHttpError(403, "Operation not permitted."))
+            }
+
+            if(role === ROLES.MANAGER && isMyRestaurentOrder) {
+                    // TODO: put proper validation on orderStatus
+                   const updatedOrder = await orderModel.findOneAndUpdate({_id: orderId}, {orderStatus: req.body.orderStatus}, {new: true});
+                   //TODO: send to kafka
+                   return res.json({_id: updatedOrder._id})
+            }
+
         }
         return next(createHttpError(403, "Operation not permitted."))
     }
