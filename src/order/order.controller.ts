@@ -242,7 +242,7 @@ export class OrderController {
                 return next(createHttpError(400, "No order found."))
             }
             if(role === ROLES.ADMIN) {
-                order.orderStatus = req.body.orderStatus;
+                order.orderStatus = req.body.status;
                 await order.save();
                 return res.json(order)
             }
@@ -255,7 +255,7 @@ export class OrderController {
 
             if(role === ROLES.MANAGER && isMyRestaurentOrder) {
                     // TODO: put proper validation on orderStatus
-                   const updatedOrder = await orderModel.findOneAndUpdate({_id: orderId}, {orderStatus: req.body.orderStatus}, {new: true});
+                   const updatedOrder = await orderModel.findOneAndUpdate({_id: orderId}, {orderStatus: req.body.status}, {new: true});
                    //TODO: send to kafka
                    return res.json({_id: updatedOrder._id})
             }
