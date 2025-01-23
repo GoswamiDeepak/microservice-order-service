@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import { PaymentGW } from "./paymentTypes";
 import orderModel from "../order/order.model";
-import { PaymentStatus } from "../order/order.type";
+import { OrderStatus, PaymentStatus } from "../order/order.type";
 import { MessageBroker } from "../types/broker";
+import { OrderEvent } from "../types";
+import customerModel from "../customer/customerModel";
 
 export class PaymentController {
     constructor(private paymentGateway: PaymentGW, private broker: MessageBroker){}
@@ -18,11 +20,17 @@ export class PaymentController {
             },{
                 new: true
             })
+            const customer = await customerModel.findOne({ _id: updatedOrder.customerId });
 
             //DONE: send update to kafka broker
-            //TODO: THINK ABOUT BROKER MESSAGE FAILED
+            const brokerMessage = {
+                event_type : OrderEvent.PAYMENT_STATUS_UPDATED,
+                data: {...updatedOrder.toObject(), customerId: customer},
+            }
+            await this.broker.sendMessage('order-topic', JSON.stringify(brokerMessage), updatedOrder._id.toString())
 
-            await this.broker.sendMessage('order-topic', JSON.stringify(updatedOrder))
+            //TODO: THINK ABOUT BROKER MESSAGE FAILE
+
         }
         return res.json({success: true})
     }

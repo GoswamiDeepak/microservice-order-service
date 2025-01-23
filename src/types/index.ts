@@ -25,14 +25,31 @@ export interface ProductPricingCache {
   productId: string; // Unique identifier for the product
   priceConfiguration: priceConfiguration;
 }
+export enum ProductEvent {
+  PRODUCT_CREATE = "PRODUCT_CREATE",
+  PRODUCT_UPDATE = "PRODUCT_UPDATE",
+  PRODUCT_DELETE = "PRODUCT_DELETE"
+ }
 export interface ProductMessage {
-  id: string;
-  priceConfiguration: ProductPricingCache;
+  event_type: ProductEvent;
+  data: {
+    id: string;
+    priceConfiguration: ProductPricingCache;
+  }
 }
-
+export enum ToppingEvents {
+  TOPPING_CREATE = "TOPPING_CREATE",
+  TOPPING_UPDATE = "TOPPING_UPDATE",
+  TOPPING_DELETE = "TOPPING_DELETE"
+}
 export interface ToppingMessage {
-  id: string;
-  price: number;
+  event_type: ToppingEvents;
+  data: {
+    id: string;
+    price: number;
+    tenantId: string;
+  }
+
 }
 
 export interface ProductPriceConfiguration {
@@ -66,6 +83,12 @@ export interface CartItem extends Pick<Product, "_id" | "name" | "priceConfigura
     selectedToppings: Topping[];
   };
   qty: number;
+}
+
+export enum OrderEvent {
+  ORDER_CREATED = "ORDER_CREATED",
+  ORDER_STATUS_UPDATED = "ORDER_STATUS_UPDATED",
+  PAYMENT_STATUS_UPDATED = "PAYMENT_STATUS_UPDATED"
 }
 
 

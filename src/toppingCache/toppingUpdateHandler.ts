@@ -8,11 +8,12 @@ export async function handleToppingUpdate(message: string) {
      const topping: ToppingMessage = JSON.parse(message);
      return await topppingCacheModel.updateOne(
          {
-             toppingId: topping.id,
+             toppingId: topping.data.id,
          },
          {
              $set: {
-                 price: topping.price,
+                 price: topping.data.price,
+                 tenantId: topping.data.tenantId
              },
          },
          {

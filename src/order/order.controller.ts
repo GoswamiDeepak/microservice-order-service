@@ -1,6 +1,6 @@
 // Import necessary modules and types
 import { Response, Request, NextFunction } from "express"; // Express types for handling HTTP requests and responses
-import { CartItem, ProductPricingCache, Topping } from "../types"; // Custom types for cart items, product pricing, and toppings
+import { CartItem, ProductPricingCache, Topping, OrderEvent } from "../types"; // Custom types for cart items, product pricing, and toppings
 import productCacheModel from "../productCache/productCacheModel"; // Model for interacting with the product pricing cache
 import topppingCacheModel, { ToppingPriceCache } from "../toppingCache/topppingCacheModel"; // Model for interacting with the topping pricing cache
 import { CouponModel } from "../coupon/coupon.model";
@@ -11,7 +11,7 @@ import mongoose from "mongoose";
 import createHttpError from "http-errors";
 import { PaymentGW } from "../payment/paymentTypes";
 import { MessageBroker } from "../types/broker";
-import {Request as JWTAuth} from 'express-jwt';
+import { Request as JWTAuth } from "express-jwt";
 import customerModel from "../customer/customerModel";
 import { ROLES } from "../constant";
 // Define the OrderController class
@@ -81,14 +81,13 @@ export class OrderController {
         const idempotency = await idempotencyModel.findOne({
             key: idempotencyKey,
         });
+
         let newOrder = idempotency ? [idempotency.response] : [];
 
         // If no idempotency record exists, create a new order and idempotency record
         if (!idempotency) {
             const session = await mongoose.startSession();
             await session.startTransaction();
-            // Abort Transaction if any error occurs
-            // Commit Transaction if no error occurs
             try {
                 // Create the new order in the database within the transaction
                 newOrder = await orderModel.create([order], {
@@ -119,6 +118,11 @@ export class OrderController {
             }
         }
 
+        const customer = await customerModel.findOne({ _id: newOrder[0].customerId });
+        const brokerMessage = {
+            event_type: OrderEvent.ORDER_CREATED,
+            data: { ...newOrder[0], customerId: customer },
+        };
         // DONE: Payment processing logic can be added here
         // TODO: error handling
         // TODO: add logging
@@ -132,137 +136,165 @@ export class OrderController {
             });
 
             // TODO: update order document -> paymentId
+            await this.broker.sendMessage("order-topic", JSON.stringify(brokerMessage), newOrder[0]._id.toString());
 
-            await this.broker.sendMessage("order-topic", JSON.stringify(newOrder));
-
-            // Send a JSON response with a success message, the total price, and the discount amount
             res.json({
                 paymentUrl: session.paymentUrl,
             });
         }
-
-        await this.broker.sendMessage("order-topic", JSON.stringify(newOrder));
+        // Cash on delivery--------------------
+        await this.broker.sendMessage("order-topic", JSON.stringify(brokerMessage), newOrder[0]._id.toString());
 
         res.json({
             paymentUrl: null,
         });
     };
 
-    getMine = async (req: JWTAuth, res: Response, next:NextFunction) => {
-      const userId = req.auth.sub;
-      if(!userId) {
-            return next(createHttpError(400, "No userId found."))
-      }
-      //TODO: Add error handling
-      const customer = await customerModel.findOne({userId})
-
-      if(!customer) {
-            return next(createHttpError(400, "No customer found."))
-      }
-      //TODO: implement pagination
-      const orders = await orderModel.find({customerId: customer._id},{cart: 0})
-
-      return res.json(orders)
-
-    }
-    getSingle =  async(req: JWTAuth, res: Response, next: NextFunction) => {
-        const orderId = req.params.orderId;
-        const {sub:userId, role, tenant: tenantId} = req.auth;
-        const fields = req.query.fields ? req.query.fields.toString().split(',') : []; //['orderStatus', 'paymentStatus']
-        const projection = fields.reduce((acc, field) => {
-            // return {
-            //     ...acc,
-            //     [field]: 1,
-            // }
-            acc[field] = 1;
-            return acc;
-        }, {customerId: 1})
-        const order = await orderModel.findOne({_id: orderId},projection).populate('customerId',"firstname lastname");  
-        if(!order) {
-            return next(createHttpError(400, "No order found."))
+    getMine = async (req: JWTAuth, res: Response, next: NextFunction) => {
+        const userId = req.auth.sub;
+        if (!userId) {
+            return next(createHttpError(400, "No userId found."));
         }
-        if(role === ROLES.ADMIN) {
-            return res.json(order)
+        //TODO: Add error handling
+        const customer = await customerModel.findOne({ userId });
+
+        if (!customer) {
+            return next(createHttpError(400, "No customer found."));
+        }
+        //TODO: implement pagination
+        const orders = await orderModel.find({ customerId: customer._id }, { cart: 0 });
+
+        return res.json(orders);
+    };
+    getSingle = async (req: JWTAuth, res: Response, next: NextFunction) => {
+        const orderId = req.params.orderId;
+        const { sub: userId, role, tenant: tenantId } = req.auth;
+        const fields = req.query.fields ? req.query.fields.toString().split(",") : []; //['orderStatus', 'paymentStatus']
+        const projection = fields.reduce(
+            (acc, field) => {
+                // return {
+                //     ...acc,
+                //     [field]: 1,
+                // }
+                acc[field] = 1;
+                return acc;
+            },
+            { customerId: 1 },
+        );
+        const order = await orderModel
+            .findOne({ _id: orderId }, projection)
+            .populate("customerId", "firstname lastname");
+        if (!order) {
+            return next(createHttpError(400, "No order found."));
+        }
+        if (role === ROLES.ADMIN) {
+            return res.json(order);
         }
 
         const myRestaurentOrder = order.tenantId === tenantId;
-        if(role === ROLES.MANAGER && myRestaurentOrder) {
-            return res.json(order)
+        if (role === ROLES.MANAGER && myRestaurentOrder) {
+            return res.json(order);
         }
-        if(role === ROLES.CUSTOMER) {
-            const customer = await customerModel.findOne({userId})
-            if(!customer) {
-                return next(createHttpError(400, "No customer found."))
+        if (role === ROLES.CUSTOMER) {
+            const customer = await customerModel.findOne({ userId });
+            if (!customer) {
+                return next(createHttpError(400, "No customer found."));
             }
-            if(order.customerId._id.toString() === customer._id.toString()) {
-                return res.json(order)
+            if (order.customerId._id.toString() === customer._id.toString()) {
+                return res.json(order);
             }
         }
-        return next(createHttpError(403, "Operation not permitted."))
-    }
+        return next(createHttpError(403, "Operation not permitted."));
+    };
 
-    getAll = async (req: JWTAuth, res: Response, next: NextFunction)=> {
-        const {role, tenant:restaurentID} = req.auth;
+    getAll = async (req: JWTAuth, res: Response, next: NextFunction) => {
+        const { role, tenant: restaurentID } = req.auth;
 
         const tenantId = req.query.tenantId;
 
-        if(role === ROLES.CUSTOMER) {
-            return createHttpError(403, "YOu are not allowed.")
+        if (role === ROLES.CUSTOMER) {
+            return createHttpError(403, "YOu are not allowed.");
         }
 
-        if(role === ROLES.ADMIN) {
-            const filter = {}
+        if (role === ROLES.ADMIN) {
+            const filter = {};
 
-            if(tenantId) {
-                filter['tenantId'] = tenantId;
+            if (tenantId) {
+                filter["tenantId"] = tenantId;
             }
             //TODO: pagniation
             //TODO: ADD Logger
-            const orders = await orderModel.find(filter,{},{sort: {createAt: -1}}).populate('customerId');
-            return res.json(orders)
+            const orders = await orderModel.find(filter, {}, { sort: { createAt: -1 } }).populate("customerId");
+            return res.json(orders);
         }
 
-        if(role === ROLES.MANAGER) {
+        if (role === ROLES.MANAGER) {
             //TODO: Add pagination
-            const orders = await orderModel.find({tenantId: restaurentID},{},{sort: {createAt: -1}}).populate('customerId');
-            return res.json(orders)
+            const orders = await orderModel
+                .find({ tenantId: restaurentID }, {}, { sort: { createAt: -1 } })
+                .populate("customerId");
+            return res.json(orders);
         }
 
-        return next(createHttpError(403, "not permitted."))
-        
-    }
+        return next(createHttpError(403, "not permitted."));
+    };
 
     changeOrderStatus = async (req: JWTAuth, res: Response, next: NextFunction) => {
         const orderId = req.params.orderId;
-        const {role, tenant:restaurentID} = req.auth;
+        const { role, tenant: restaurentID } = req.auth;
 
-        if(role === ROLES.ADMIN || role === ROLES.MANAGER) {
-            const order = await orderModel.findOne({_id: orderId});
-            if(!order) {
-                return next(createHttpError(400, "No order found."))
+        if (role === ROLES.ADMIN || role === ROLES.MANAGER) {
+            const order = await orderModel.findOne({ _id: orderId });
+
+            if (!order) {
+                return next(createHttpError(400, "No order found."));
             }
-            if(role === ROLES.ADMIN) {
-                order.orderStatus = req.body.status;
-                await order.save();
-                return res.json(order)
-            }
+
+            const brokerMessage = {
+                event_type: OrderEvent.ORDER_STATUS_UPDATED,
+                data: order,
+            };
+
+            // if(role === ROLES.ADMIN) {
+            //     order.orderStatus = req.body.status;
+            //     await order.save();
+            //     return res.json(order)
+            // }
 
             const isMyRestaurentOrder = order.tenantId === restaurentID;
 
-            if(role === ROLES.ADMIN && !isMyRestaurentOrder) {
-                return next(createHttpError(403, "Operation not permitted."))
+            // if(role === ROLES.ADMIN && !isMyRestaurentOrder) {
+            //     return next(createHttpError(403, "Operation not permitted."))
+            // }
+
+            if (role === ROLES.MANAGER && !isMyRestaurentOrder) {
+                return next(createHttpError(403, "Operation not permitted."));
             }
 
-            if(role === ROLES.MANAGER && isMyRestaurentOrder) {
-                    // TODO: put proper validation on orderStatus
-                   const updatedOrder = await orderModel.findOneAndUpdate({_id: orderId}, {orderStatus: req.body.status}, {new: true});
-                   //TODO: send to kafka
-                   return res.json({_id: updatedOrder._id})
-            }
+            if ((role === ROLES.MANAGER && isMyRestaurentOrder) || role === ROLES.ADMIN) {
+                // TODO: put proper validation on orderStatus
+                const updatedOrder = await orderModel.findOneAndUpdate(
+                    { _id: orderId },
+                    { orderStatus: req.body.status },
+                    { new: true },
+                );
+                const customer = await customerModel.findOne({ _id: updatedOrder.customerId });
+                const brokerMessage = {
+                    event_type: OrderEvent.ORDER_STATUS_UPDATED,
+                    data: {...updatedOrder.toObject(), customerId: customer},
+                };
 
+                //DONE: send to kafka
+                await this.broker.sendMessage(
+                    "order-topic",
+                    JSON.stringify(brokerMessage),
+                    updatedOrder._id.toString(),
+                );
+                return res.json({ _id: updatedOrder._id });
+            }
         }
-        return next(createHttpError(403, "Operation not permitted."))
-    }
+        return next(createHttpError(403, "Operation not permitted."));
+    };
 
     // Private method to calculate the total price of items in the cart
     private calculateTotal = async (cart: CartItem[]) => {
